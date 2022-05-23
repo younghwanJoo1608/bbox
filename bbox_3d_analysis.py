@@ -34,8 +34,12 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/rise/Desktop/test/labels/azure_stacked_boxes_2400mm.json"
-gt_dir = "/home/rise/Desktop/labels/azure_stacked_boxes_2400mm.json"
+pred_dir = "/home/rise/Desktop/test/labels/yolact1x/azure_sack_box_pouch_1500mm.json"
+gt_dir = "/home/rise/Desktop/labels/final_annotations_centroidrel/azure_sack_box_pouch_1500mm.json"
+
+#pred_dir = "/home/rise/Desktop/test/labels/azure_sack_box_pouch_1500mm.json"
+#gt_dir = "/home/rise/Desktop/labels/azure_sack_box_pouch_1500mm.json"
+
 
 # true object associations:
 # (gt id, pred id)
@@ -89,10 +93,10 @@ ax1 = fig.add_subplot(1,2,1,projection="3d")
 ax2 = fig.add_subplot(1,2,2,projection="3d")
 
 
-# draw bounding boxes
+# draw  predicted bounding boxes
 colors = plt.cm.plasma(np.arange(0,len(preds_bboxes))/len(preds_bboxes))
 for i, box in enumerate(preds_bboxes[:]):
-    if(np.max(box.p)>10):
+    if(np.max(box.p)>4):
         continue
     cube = box.p
 
@@ -102,7 +106,7 @@ for i, box in enumerate(preds_bboxes[:]):
     # write corners' names
     texts = ["p"+str(i+1) for i in range(8)]
     corners = [box.p1, box.p2, box.p3, box.p4, box.p5, box.p6, box.p7, box.p8]
-    corners.sort(key=(lambda x: x[0]))
+    #corners.sort(key=(lambda x: x[0]))
     for k,(text, corner) in enumerate(zip(texts,corners)):
         continue
         if k < 4:
@@ -118,12 +122,14 @@ for i, box in enumerate(preds_bboxes[:]):
 
     # plot sides
     ax1.add_collection3d(Poly3DCollection(verts,  facecolors=colors[i], linewidths=1, edgecolors='b', alpha=.25))
-    ax1.text(box.center[0], box.center[1], box.center[2], str(i))
+    ax1.text(corners[1][0],corners[1][1],corners[1][2],"p2",color=colors[i])
+    ax1.text(corners[2][0],corners[2][1],corners[2][2],"p3",color=colors[i])
+    #ax1.text(box.center[0], box.center[1], box.center[2], str(i))
 
-
+# draw ground truth bounding boxes
 colors = plt.cm.plasma(np.arange(0,len(gt_bboxes))/len(gt_bboxes))
 for i, box in enumerate(gt_bboxes[:]):
-    if(np.max(box.p)>10):
+    if(np.max(box.p)>4):
         continue
     cube = box.p
 
@@ -133,7 +139,7 @@ for i, box in enumerate(gt_bboxes[:]):
     # write corners' names
     texts = ["p"+str(i+1) for i in range(8)]
     corners = [box.p1, box.p2, box.p3, box.p4, box.p5, box.p6, box.p7, box.p8]
-    corners.sort(key=(lambda x: x[0]))
+    #corners.sort(key=(lambda x: x[0]))
     for k,(text, corner) in enumerate(zip(texts,corners)):
         continue
         if k < 4:
@@ -149,15 +155,20 @@ for i, box in enumerate(gt_bboxes[:]):
 
     # plot sides
     ax2.add_collection3d(Poly3DCollection(verts,  facecolors=colors[i], linewidths=1, edgecolors='b', alpha=.25))
-    ax2.text(box.center[0], box.center[1], box.center[2], str(i))
+    ax2.text(corners[1][0],corners[1][1],corners[1][2],"p2",color=colors[i])
+    ax2.text(corners[2][0],corners[2][1],corners[2][2],"p3",color=colors[i])
+    #ax2.text(box.center[0], box.center[1], box.center[2], str(i))
+
 
 fig2 = plt.figure()
 ax3 = fig2.add_subplot(1,2,1,projection="3d")
 ax4 = fig2.add_subplot(1,2,2,projection="3d")
 
+# draw ground true associations... do this only if these are known
+# usually these are unknown
 gt_colors = plt.cm.viridis(np.arange(0,len(obj_ass))/len(obj_ass))
 pred_colors = plt.cm.copper(np.arange(0,len(obj_ass))/len(obj_ass))
-for i, index_pair in enumerate(obj_ass[:]):
+for i, index_pair in enumerate(obj_ass[:0]):
     # retrieve corresponding boxes
     gt_box = gt_bboxes[index_pair[0]]
     pred_box = preds_bboxes[index_pair[1]]
@@ -202,7 +213,7 @@ for i, index_pair in enumerate(obj_ass[:]):
     #ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[1]), color= pred_colors[i])
 
 
-# compute IoU to get prediction-ground truth pairs
+# compute IoU to get association between prediction & ground truth 
 pred_idxs = np.arange(len(preds_bboxes)).tolist()
 gt_idxs = np.arange(len(gt_bboxes)).tolist()
 ass_found = []   # store object associations found
@@ -219,7 +230,7 @@ for k, pred_idx in enumerate(pred_idxs):
         intersection_vol, iou_3d = box3d_overlap(pred_box.unsqueeze(0), gt_box.unsqueeze(0))
         ious.append(iou_3d.item())
         int_vol.append(intersection_vol)
-        if (iou_3d > 0.1):   # only consider match if iou > 0.5
+        if (iou_3d > 0.1):   # only consider match if iou > threshold
             if (iou_3d > max_iou):
                 max_iou = iou_3d
                 max_gt_index = gt_idx
@@ -230,23 +241,27 @@ for k, pred_idx in enumerate(pred_idxs):
         ass_found.append((max_gt_index,pred_idx))
         gt_idxs[max_gt_index] = -1
 
-ass_found.sort(key=(lambda x: x[0]))
+ass_found.sort(key=(lambda x: x[0]))  #sort based on gt index
+
 #print("True associations: ",len(obj_ass))
 #print(obj_ass)
 #print("Found associations: ",len(ass_found))
 #print(ass_found)
-correct_ass = 0
-for ass in ass_found:
-    if ass in obj_ass:
-        correct_ass +=1
-    else:
-        print("Incorrect association: ",ass)
-print("Correct associations: ", correct_ass)
-print("Ious: min {} max {} std {} mean {}".format(np.min(ious), np.max(ious),np.std(ious),np.mean(ious)))
-print("Int Volume: min {} max {} std {} mean {}".format(np.min(int_vol), np.max(int_vol),np.std(int_vol),np.mean(int_vol)))
+#correct_ass = 0
+#for ass in ass_found:
+#    if ass in obj_ass:
+#        correct_ass +=1
+#    else:
+#        print("Incorrect association: ",ass)
+#print("Correct associations: ", correct_ass)
+#print("Ious: min {} max {} std {} mean {}".format(np.min(ious), np.max(ious),np.std(ious),np.mean(ious)))
+#print("Int Volume: min {} max {} std {} mean {}".format(np.min(int_vol), np.max(int_vol),np.std(int_vol),np.mean(int_vol)))
 
+
+# draw found correspondences in the same coordinate system
+# this is just for visualization purposes
 gt_colors = plt.cm.viridis(np.arange(0,len(ass_found))/len(ass_found))
-pred_colors = plt.cm.copper(np.arange(0,len(ass_found))/len(ass_found))
+pred_colors = plt.cm.flag(np.arange(0,len(ass_found))/len(ass_found))
 for i, index_pair in enumerate(ass_found[:]):
     # retrieve corresponding boxes
     gt_box = gt_bboxes[index_pair[0]]
@@ -296,7 +311,15 @@ pred_boxes_corner_idx = []   # store idx of corners for each predicted box
 gt_boxes_corner_idx = []     # store idx of corner in each gt box that corresponds to each corner in pred box.. together with distnce
 pred_colors = plt.cm.prism(np.arange(0,len(ass_found))/len(ass_found))
 gt_colors = plt.cm.gist_ncar(np.arange(0,len(ass_found))/len(ass_found))
+z_errors = []
 
+# Find prediction - gt correspondence of corners in the front plane
+# For each pbox in pred_box
+#   For each pcorner in pbox:
+#       for each gtcorner in gt_box
+#              Get euclidian distance between pcorner and gtcorner
+#   sort euclidean distance from shortest to largest
+#   correspondance is the gtcorner with shortest distance to pcorner
 for k, index_pair in enumerate(ass_found[:]):
 #for k, index_pair in enumerate(random.sample(ass_found[:],2)):
 
@@ -325,24 +348,87 @@ for k, index_pair in enumerate(ass_found[:]):
     for n, pred_corner in enumerate(pred_front_corners):
         pred_box_corner_ids.append(n)
         idx_dist = []
+        # compute distance from this pred_corner to all gt_corners
         for j, gt_corner in enumerate(gt_front_corners):
-            
-            idx_dist.append((j,np.linalg.norm(np.array(pred_corner) - np.array(gt_corner))))
+            idx_dist.append((j,np.linalg.norm(np.array(pred_corner) - np.array(gt_corner)), np.abs(pred_corner[2] - gt_corner[2])))
 
-        # sort distances
+        # sort distances from nearest to furthest
         idx_dist.sort(key=(lambda x: x[1]))
         #print("Distance sort\n", idx_dist)
 
+        # corresponding corner should bethe one with shortest distance
         gt_box_corner_ids.append(idx_dist[0])
+        z_errors.append(idx_dist[0][2])
 
-        ax4.text(pred_corner[0], pred_corner[1], pred_corner[2], str(k*4 + n), color= pred_colors[k])
-        ax4.text(gt_front_corners[idx_dist[0][0]][0], gt_front_corners[idx_dist[0][0]][1], gt_front_corners[idx_dist[0][0]][2], str(k*4 + n), color= gt_colors[k])
+        #ax4.text(pred_corner[0], pred_corner[1], pred_corner[2], str(k*4 + n), color= pred_colors[k])
+        #ax4.text(gt_front_corners[idx_dist[0][0]][0], gt_front_corners[idx_dist[0][0]][1], gt_front_corners[idx_dist[0][0]][2], str(k*4 + n), color= gt_colors[k])
     
     pred_boxes_corner_idx.append(pred_box_corner_ids)
     gt_boxes_corner_idx.append(gt_box_corner_ids)
-
+print("z_errors: ",len(z_errors),np.mean(z_errors))
 #print("Pred Corners",(pred_boxes_corner_idx))
 #print("GT Corners",(gt_boxes_corner_idx))
+
+
+# compute width and height
+# width = shortest distance between 4 corner points
+# height = 2nd shortest distnace between 4 corner points
+gt_width = []
+gt_heigth = []
+pred_width = []
+pred_heigth = []
+for k, index_pair in enumerate(ass_found[:]):
+#for k, index_pair in enumerate(random.sample(ass_found[:],2)):
+
+    # get only the 4 points with lowest X position value : front plane points
+    # retrieve corresponding boxes
+    gt_box = gt_bboxes[index_pair[0]]
+    pred_box = preds_bboxes[index_pair[1]]
+
+    # get corners of 3d box and order by x value
+    gt_cube = gt_box.p.tolist()
+    pred_cube = pred_box.p.tolist()    
+    gt_cube.sort(key=(lambda x: x[0]))
+    pred_cube.sort(key=(lambda x: x[0]))
+
+    # get only front plane corners
+    gt_front_corners = gt_cube[:3]
+    pred_front_corners = pred_cube[:3]
+
+    # compute distance between points in the front face of gt bbox
+    # there are 4 points... 3 distances
+    gt_dims = []
+    gt_dims.append((np.linalg.norm(np.array(gt_front_corners[0])-np.array(gt_front_corners[1])),gt_front_corners[0],gt_front_corners[1]))
+    gt_dims.append((np.linalg.norm(np.array(gt_front_corners[0])-np.array(gt_front_corners[2])),gt_front_corners[0],gt_front_corners[2]))
+    gt_dims.append((np.linalg.norm(np.array(gt_front_corners[1])-np.array(gt_front_corners[2])),gt_front_corners[1],gt_front_corners[2]))
+    gt_dims.sort(key=(lambda x: x[0]))
+    #print("gtdims",gt_dims)
+    gt_width.append(gt_dims[0][0]) # assume width is the smallest dimension
+    gt_heigth.append(gt_dims[1][0]) # assume height is the next smallest dimension 
+    
+    # compute distance between points in the front face of pred box
+    # again there are 4 points... 3 distances
+    pred_dims = []
+    pred_dims.append((np.linalg.norm(np.array(pred_front_corners[0])-np.array(pred_front_corners[1])),pred_front_corners[0],pred_front_corners[1]))
+    pred_dims.append((np.linalg.norm(np.array(pred_front_corners[0])-np.array(pred_front_corners[2])),pred_front_corners[0],pred_front_corners[2]))
+    pred_dims.append((np.linalg.norm(np.array(pred_front_corners[1])-np.array(pred_front_corners[2])),pred_front_corners[1],pred_front_corners[2]))
+    pred_dims.sort(key=(lambda x: x[0]))
+    pred_width.append(pred_dims[0][0]) # assume width is the smallest dimension
+    pred_heigth.append(pred_dims[1][0]) # assume height is the next smallest dimension
+
+    # ddraw predicted box width and height
+    ax1.plot((pred_dims[0][2][0],pred_dims[0][1][0]),(pred_dims[0][2][1],pred_dims[0][1][1]),(pred_dims[0][2][2],pred_dims[0][1][2]),marker='o',color="r")
+    ax1.plot((pred_dims[1][2][0],pred_dims[1][1][0]),(pred_dims[1][2][1],pred_dims[1][1][1]),(pred_dims[1][2][2],pred_dims[1][1][2]),marker='o',color="b")
+
+    # draw gt box width and heights
+    ax2.plot((gt_dims[0][2][0],gt_dims[0][1][0]),(gt_dims[0][2][1],gt_dims[0][1][1]),(gt_dims[0][2][2],gt_dims[0][1][2]),marker='o',color="r")
+    ax2.plot((gt_dims[1][2][0],gt_dims[1][1][0]),(gt_dims[1][2][1],gt_dims[1][1][1]),(gt_dims[1][2][2],gt_dims[1][1][2]),marker='o',color="b")
+
+error_width =[np.abs(v) for v in  (np.array(pred_width) - np.array(gt_width))]
+error_height = [np.abs(v) for v in ( np.array(pred_heigth) - np.array(gt_heigth))]
+print("Width Error:\n{}\n{}\n{}\n{}\n{}\n".format(np.mean(error_width),np.min(error_width), np.max(error_width),np.std(error_width),len(error_width)))
+print("Hieght Error: \n{}\n{}\n{}\n{}\n{}\n".format(np.mean(error_height),np.min(error_height), np.max(error_height),np.std(error_height),len(error_height)))
+
 
 # sum all per corner errors into ADD metric
 add = []
@@ -352,13 +438,54 @@ for data in  gt_boxes_corner_idx:
         error += corner[1]
     add.append(error/4)
 
-assert len(add)==len(gt_boxes_corner_idx)
-print("ADD: n= {} min {} max {} std {} mean {}".format(len(add),np.min(add), np.max(add),np.std(add),np.mean(add)))
+#assert len(add)==len(gt_boxes_corner_idx)
+print("ADD:\n{}\n{}\n{}\n{}\n{}".format(np.mean(add),
+                                        np.min(add), 
+                                        np.max(add),
+                                        np.std(add),
+                                        len(add)))
+
+
+# compute front plane position errors
+centroid_errors = []
+for k, index_pair in enumerate(ass_found[:]):
+
+    # get only the 4 points with lowest X position value : front plane points
+    # retrieve corresponding boxes
+    gt_box = gt_bboxes[index_pair[0]]
+    pred_box = preds_bboxes[index_pair[1]]
+
+    # get corners of 3d box and order by x value
+    gt_cube = gt_box.p.tolist()
+    pred_cube = pred_box.p.tolist()    
+    gt_cube.sort(key=(lambda x: x[0]))
+    pred_cube.sort(key=(lambda x: x[0]))
+
+    # get only front plane corners
+    gt_front_corners = gt_cube[:4]
+    pred_front_corners = pred_cube[:4]
+
+    pred_centroid = np.mean(np.array(pred_front_corners), axis=0)
+    gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
+
+    centroid_error = np.linalg.norm(gt_centroid - pred_centroid)
+    centroid_errors.append(centroid_error)
+
+    ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
+    ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
+
+print("Centroid Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(centroid_errors),
+                                                        np.min(centroid_errors), 
+                                                        np.max(centroid_errors),
+                                                        np.std(centroid_errors),
+                                                        len(centroid_errors)))
+
+
 
 fig3 = plt.figure()
 ax5 = fig3.add_subplot(1,1,1)
 ax5.hist(add,bins=10,label="ADD_4 error")
-ax5.set_title("Azure Kinect DK ADD4 error \n Stacked Boxes: distance = 2400mm  n = {}".format(len(add)))
+ax5.set_title("Azure kinect DK ADD4 error \n Random Boxes: distance = 1900mm  n = {}".format(len(add)))
 ax5.set_xlabel("ADD error")
 ax5.set_ylabel("Sample count")
 
