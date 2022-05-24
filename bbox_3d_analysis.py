@@ -34,8 +34,8 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/rise/Desktop/test/labels/yolact1x/azure_sack_box_pouch_1500mm.json"
-gt_dir = "/home/rise/Desktop/labels/final_annotations_centroidrel/azure_sack_box_pouch_1500mm.json"
+pred_dir = "/home/rise/Desktop/example.json"
+gt_dir = "/home/rise/Desktop/labels/final_annotations_centroidrel/azure_scramble_1900mm.json"
 
 #pred_dir = "/home/rise/Desktop/test/labels/azure_sack_box_pouch_1500mm.json"
 #gt_dir = "/home/rise/Desktop/labels/azure_sack_box_pouch_1500mm.json"
@@ -474,7 +474,7 @@ for k, index_pair in enumerate(ass_found[:]):
     ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
     ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
 
-print("Centroid Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(centroid_errors),
+print("Position Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(centroid_errors),
                                                         np.min(centroid_errors), 
                                                         np.max(centroid_errors),
                                                         np.std(centroid_errors),
