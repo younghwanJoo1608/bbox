@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 from pytorch3d.ops import box3d_overlap
 import torch
+import math
 # Assume inputs: boxes1 (M, 8, 3) and boxes2 (N, 8, 3)
-
 
 
 def set_axes_equal(ax: plt.Axes):
@@ -34,11 +34,32 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/rise/Desktop/example.json"
-gt_dir = "/home/rise/Desktop/labels/final_annotations_centroidrel/azure_scramble_1900mm.json"
+pred_dir = "/home/ksy/analysis/aem_pred/azure_pouch_box_1670mm.json"
+gt_dir = "/home/ksy/analysis/aem_gt/azure_pouch_box_1670mm.json"
+#
+# pred_dir = "/home/ksy/analysis/aem_pred/azure_sack_box_pouch_1500mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/azure_sack_box_pouch_1500mm.json"
+#
+# pred_dir = "/home/ksy/analysis/aem_pred/azure_scramble_1900mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/azure_scramble_1900mm.json"
+#
+# pred_dir = "/home/ksy/analysis/aem_pred/azure_stacked_boxes_2400mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/azure_stacked_boxes_2400mm.json"
 
-#pred_dir = "/home/rise/Desktop/test/labels/azure_sack_box_pouch_1500mm.json"
-#gt_dir = "/home/rise/Desktop/labels/azure_sack_box_pouch_1500mm.json"
+# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_sack_box_pouch_3600mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_sack_box_pouch_3600mm.json"
+
+# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_scramble_2400mm.json"                # 90도짜리 있음
+# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_scramble_2400mm.json"
+#
+# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_stacked_boxes_2700mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_stacked_boxes_2700mm.json"
+
+# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_free_form_2400mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_free_form_2400mm.json"
+
+# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_stacked_boxes_3300mm.json"
+# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_horz_3300mm.json"
 
 
 # true object associations:
@@ -161,8 +182,9 @@ for i, box in enumerate(gt_bboxes[:]):
 
 
 fig2 = plt.figure()
-ax3 = fig2.add_subplot(1,2,1,projection="3d")
-ax4 = fig2.add_subplot(1,2,2,projection="3d")
+# ax3 = fig2.add_subplot(1,2,1,projection="3d")
+# ax4 = fig2.add_subplot(1,2,2,projection="3d")
+ax4 = fig2.add_subplot(1,1,1,projection="3d")
 
 # draw ground true associations... do this only if these are known
 # usually these are unknown
@@ -176,8 +198,8 @@ for i, index_pair in enumerate(obj_ass[:0]):
     gt_cube = gt_box.p
     pred_cube = pred_box.p
     # plot vertices
-    ax3.scatter3D(gt_cube[:, 0], gt_cube[:, 1], gt_cube[:, 2], s=0.3, color=gt_colors[i])
-    ax3.scatter3D(pred_cube[:, 0], pred_cube[:, 1], pred_cube[:, 2], s=0.3, color=pred_colors[i])
+    # ax3.scatter3D(gt_cube[:, 0], gt_cube[:, 1], gt_cube[:, 2], s=0.3, color=gt_colors[i])
+    # ax3.scatter3D(pred_cube[:, 0], pred_cube[:, 1], pred_cube[:, 2], s=0.3, color=pred_colors[i])
 
     # write corners' names
     texts = ["p"+str(i+1) for i in range(8)]
@@ -197,8 +219,8 @@ for i, index_pair in enumerate(obj_ass[:0]):
             [gt_cube[4],gt_cube[7],gt_cube[3],gt_cube[0]]]
 
     # plot sides
-    ax3.add_collection3d(Poly3DCollection(gt_verts,  facecolors=gt_colors[i], linewidths=1, edgecolors=gt_colors[i], alpha=.25))
-    ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[0]), color= gt_colors[i])
+    # ax3.add_collection3d(Poly3DCollection(gt_verts,  facecolors=gt_colors[i], linewidths=1, edgecolors=gt_colors[i], alpha=.25))
+    # ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[0]), color= gt_colors[i])
 
     # list of sides' polygons of predicted cube
     pred_verts = [[pred_cube[0],pred_cube[1],pred_cube[2],pred_cube[3]],
@@ -209,7 +231,7 @@ for i, index_pair in enumerate(obj_ass[:0]):
             [pred_cube[4],pred_cube[7],pred_cube[3],pred_cube[0]]]
 
     # plot sides
-    ax3.add_collection3d(Poly3DCollection(pred_verts,  facecolors=pred_colors[i], linewidths=1, edgecolors=pred_colors[i], alpha=.25))
+    # ax3.add_collection3d(Poly3DCollection(pred_verts,  facecolors=pred_colors[i], linewidths=1, edgecolors=pred_colors[i], alpha=.25))
     #ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[1]), color= pred_colors[i])
 
 
@@ -471,34 +493,182 @@ for k, index_pair in enumerate(ass_found[:]):
     centroid_error = np.linalg.norm(gt_centroid - pred_centroid)
     centroid_errors.append(centroid_error)
 
-    ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
-    ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
+    # ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
+    # ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
 
 print("Position Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(centroid_errors),
-                                                        np.min(centroid_errors), 
+                                                        np.min(centroid_errors),
                                                         np.max(centroid_errors),
                                                         np.std(centroid_errors),
                                                         len(centroid_errors)))
 
 
+# # compute front plane orientation errors
+# avg_vectors = []
+# orientation_errors = []
+# for k, index_pair in enumerate(ass_found[:]):
+#     # get only the 4 points with lowest X position value : front plane points
+#     # retrieve corresponding boxes
+#     gt_box = gt_bboxes[index_pair[0]]
+#     pred_box = preds_bboxes[index_pair[1]]
+#
+#     # get corners of 3d box and order by x value
+#     gt_cube = gt_box.p.tolist()
+#     pred_cube = pred_box.p.tolist()
+#     gt_cube.sort(key=(lambda x: x[0]))
+#     pred_cube.sort(key=(lambda x: x[0]))
+#
+#     # get only front plane corners
+#     gt_front_corners = gt_cube[:4]
+#     pred_front_corners = pred_cube[:4]
+#
+#     gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
+#     pred_centroid = np.mean(np.array(pred_front_corners), axis=0)
+#
+#     # compute cross vector with 2 vectors of plane
+#     gt_v1 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[1])
+#     gt_v2 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[2])
+#     gt_normal_v = np.cross(gt_v1, gt_v2)
+#
+#     pred_v1 = np.array(pred_front_corners[0] - np.array(pred_front_corners[1]))
+#     pred_v2 = np.array(pred_front_corners[0] - np.array(pred_front_corners[2]))
+#     pred_normal_v = np.cross(pred_v1, pred_v2)
+#
+#     # reverse vectors with opposite direction
+#     if gt_normal_v[0] > 0:
+#         gt_normal_v *= -1
+#     u1, v1, w1 = gt_centroid
+#     x1, y1, z1 = gt_normal_v
+#
+#     if pred_normal_v[0] > 0:
+#         pred_normal_v *= -1
+#     u2, v2, w2 = pred_centroid
+#     x2, y2, z2 = pred_normal_v
+#
+#     # get theta from 2 vectors
+#     theta_radian = math.acos(np.dot(gt_normal_v, pred_normal_v) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v)))
+#     theta_degree = math.degrees(theta_radian)
+#
+#     orientation_error = theta_degree
+#     orientation_errors.append(orientation_error)
+#
+#     ax4.quiver(u1, v1, w1, x1, y1, z1, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+#     ax4.quiver(u2, v2, w2, x2, y2, z2, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
+#
+# print("Orientation Errors: \n{}°\n{}°\n{}°\n{}\n{}".format(np.mean(orientation_errors),
+#                                                            np.min(orientation_errors),
+#                                                            np.max(orientation_errors),
+#                                                            np.std(orientation_errors),
+#                                                            len(orientation_errors)))
 
-fig3 = plt.figure()
-ax5 = fig3.add_subplot(1,1,1)
-ax5.hist(add,bins=10,label="ADD_4 error")
-ax5.set_title("Azure kinect DK ADD4 error \n Random Boxes: distance = 1900mm  n = {}".format(len(add)))
-ax5.set_xlabel("ADD error")
-ax5.set_ylabel("Sample count")
+# compute front plane orientation errors
+avg_vectors = []
+orientation_errors = []
+for k, index_pair in enumerate(ass_found[:]):
+    # get only the 4 points with lowest X position value : front plane points
+    # retrieve corresponding boxes
+    gt_box = gt_bboxes[index_pair[0]]
+    pred_box = preds_bboxes[index_pair[1]]
+
+    # get corners of 3d box and order by x value
+    gt_cube = gt_box.p.tolist()
+    pred_cube = pred_box.p.tolist()
+    gt_cube.sort(key=(lambda x: x[0]))
+    pred_cube.sort(key=(lambda x: (x[0], x[2])))
+
+    # get only front plane corners
+    gt_front_corners = gt_cube[:4]
+    pred_front_corners_1 = pred_cube[:4]
+    pred_front_corners_2 = pred_cube[:2] + pred_cube[4:6]
+
+    # get centroid & normal vector of gt plane
+    gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
+    gt_v1 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[1])
+    gt_v2 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[2])
+    gt_normal_v = np.cross(gt_v1, gt_v2)
+
+    if gt_normal_v[0] > 0:
+        gt_normal_v *= -1
+    u1, v1, w1 = gt_centroid
+    x1, y1, z1 = gt_normal_v
+
+    # get centroid & normal vector of 1st pred plane
+    pred_centroid_1 = np.mean(np.array(pred_front_corners_1), axis=0)
+    x5, y5, z5 = pred_centroid_1
+    ax4.scatter(x5, y5, z5, color='r', marker='o')
+
+    pred_v1 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[1]))
+    pred_v2 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[2]))
+    pred_normal_v1 = np.cross(pred_v1, pred_v2)
+
+    if pred_normal_v1[0] > 0:
+        pred_normal_v1 *= -1
+    x7, y7, z7 = pred_normal_v1
+    # ax4.quiver(x5, y5, z5, x7, y7, z7, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
+
+    # get centroid & normal vector of 2nd pred plane
+    pred_centroid_2 = np.mean(np.array(pred_front_corners_2), axis=0)
+    x6, y6, z6 = pred_centroid_2
+    # ax4.scatter(x6, y6, z6, color='b', marker='o')
+
+    pred_v1 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[1]))
+    pred_v2 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[2]))
+    pred_normal_v2 = np.cross(pred_v1, pred_v2)
+
+    if pred_normal_v2[0] > 0:
+        pred_normal_v2 *= -1
+    x8, y8, z8 = pred_normal_v2
+    # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+
+    # get theta from 2 vectors
+    theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
+    theta_degree_1 = math.degrees(theta_radian_1)
+    theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
+    theta_degree_2 = math.degrees(theta_radian_2)
+
+    if theta_degree_1 > 45:
+        pred_normal_v1, pred_normal_v2 = pred_normal_v2, pred_normal_v1
+        theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
+        theta_degree_1 = math.degrees(theta_radian_1)
+        theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
+        theta_degree_2 = math.degrees(theta_radian_2)
+        x5, x6 = x6, x5
+        y5, y6 = y6, y5
+        z5, z6 = z6, z5
+        x7, x8 = x8, x7
+        y7, y8 = y8, y7
+        z7, z8 = z8, z7
+
+    ax4.quiver(u1, v1, w1, x1, y1, z1, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+    ax4.quiver(x5, y5, z5, x7, y7, z7, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
+    # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+
+    orientation_error = theta_degree_1
+    orientation_errors.append(orientation_error)
+
+print("Orientation Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(orientation_errors),
+                                                           np.min(orientation_errors),
+                                                           np.max(orientation_errors),
+                                                           np.std(orientation_errors),
+                                                           len(orientation_errors)))
+
+# fig3 = plt.figure()
+# ax5 = fig3.add_subplot(1,1,1)
+# ax5.hist(add,bins=10,label="ADD_4 error")
+# ax5.set_title("Azure kinect DK ADD4 error \n Random Boxes: distance = 1900mm  n = {}".format(len(add)))
+# ax5.set_xlabel("ADD error")
+# ax5.set_ylabel("Sample count")
 
 ax1.set_title("Predicted Positions")
 ax2.set_title("Ground Truth Positions")
-ax3.set_title("True Associations")
+# ax3.set_title("True Associations")
 ax4.set_title("Founds Associations")
 
 
-ax1.set_box_aspect([1,1,1])
-ax2.set_box_aspect([1,1,1])
-ax3.set_box_aspect([1,1,1])
-ax4.set_box_aspect([1,1,1])
+ax1.set_box_aspect([-1,-1,1])
+ax2.set_box_aspect([-1,-1,1])
+# ax3.set_box_aspect([-1,-1,1])
+ax4.set_box_aspect([-1,-1,1])
 
 # draw coordinate system
 ax1.quiver(0,0,0,1,0,0, color = "r", arrow_length_ratio = 0.1)
@@ -519,12 +689,23 @@ ax2.set_xlabel("x")
 ax2.set_ylabel("y")
 ax2.set_zlabel("z")
 
+ax4.set_xlabel("x")
+ax4.set_ylabel("y")
+ax4.set_zlabel("z")
+
 set_axes_equal(ax1)
 set_axes_equal(ax2)
-set_axes_equal(ax3)
+# set_axes_equal(ax3)
 set_axes_equal(ax4)
 
 plt.tight_layout()
 plt.show()
-    
-
+# plt.savefig('/home/ksy/azure_pouch_box_1670mm.png')
+# plt.savefig('/home/ksy/azure_sack_box_pouch_1500mm.png')
+# plt.savefig('/home/ksy/azure_scramble_1900mm.png')
+# plt.savefig('/home/ksy/azure_stacked_boxes_2400mm.png')
+# plt.savefig('/home/ksy/ensenso_sack_box_pouch_3600mm.png')
+# plt.savefig('/home/ksy/ensenso_scramble_2400mm.png')
+# plt.savefig('/home/ksy/ensenso_stacked_boxes_2700mm.png')
+# plt.savefig('/home/ksy/mechmind_free_form_2400mm.png')
+# plt.savefig('/home/ksy/mechmind_stacked_boxes_3300mm.png')
