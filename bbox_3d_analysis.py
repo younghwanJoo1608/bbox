@@ -1,6 +1,7 @@
 from bbox import BBox3D
 import pyquaternion
 import numpy as np
+import numpy.linalg as la
 import json
 import random
 from mpl_toolkits.mplot3d import Axes3D
@@ -34,32 +35,43 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/ksy/analysis/aem_pred/azure_pouch_box_1670mm.json"
-gt_dir = "/home/ksy/analysis/aem_gt/azure_pouch_box_1670mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_sack_box_pouch_1500mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_sack_box_pouch_1500mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_scramble_1900mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_scramble_1900mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_stacked_boxes_2400mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_stacked_boxes_2400mm.json"
+pred_dir = "/home/jyh/json/small_box/default3.json"
+gt_dir = "/home/jyh/repos/labelCloud/labels/backup/small_boxes_0.json"
 
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_sack_box_pouch_3600mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_sack_box_pouch_3600mm.json"
+#pred_dir = "/home/jyh/pcd/bdloss_new/bottom_failed_pred_new_0.1_2.json"
+#gt_dir = "/home/jyh/repos/labelCloud/labels/backup/bottom_box_failed_pcd_rel.json"
 
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_scramble_2400mm.json"                # 90도짜리 있음
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_scramble_2400mm.json"
+#pred_dir = "/home/jyh/pcd/bdloss_new/azure_pouch_box_1670mm.json"
+#gt_dir = "/home/jyh/pcd/labels/exp146_rel/exp1_down_gt.json"
+
+
+#pred_dir = "/home/jyh/json/occlusion/3.json"
+#gt_dir = "/home/jyh/json/groundtruth/azure_pouch_box_1670mm.json"
 #
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_stacked_boxes_2700mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_stacked_boxes_2700mm.json"
+#pred_dir = "/home/jyh/json/before/azure_sack_box_pouch_1500mm.json"
+#gt_dir = "/home/jyh/json/groundtruth/azure_sack_box_pouch_1500mm.json"
+#
+#pred_dir = "/home/jyh/json/occlusion/azure5.json"
+#gt_dir = "/home/jyh/json/groundtruth/azure_scramble_1900mm.json"
+#
+#pred_dir = "/home/jyh/json/bdloss_new/5.json"
+#gt_dir = "/home/jyh/json/groundtruth/azure_stacked_boxes_2400mm.json"
 
-# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_free_form_2400mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_free_form_2400mm.json"
 
-# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_stacked_boxes_3300mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_horz_3300mm.json"
+#pred_dir = "/home/jyh/json/bdloss_new/ensenso_sack_box_pouch_3600mm.json"
+#gt_dir = "/home/jyh/json/groundtruth/ensenso_sack_box_pouch_3600mm.json"
+
+#pred_dir = "/home/jyh/json/bdloss_new/ensenso_scramble_2400mm.json"                # 90도짜리 있음
+#gt_dir = "/home/jyh/json/groundtruth/ensenso_scramble_2400mm.json"
+#
+#pred_dir = "/home/jyh/json/bdloss_new/ensenso_stacked_boxes_2700mm.json"
+#gt_dir = "/home/jyh/json/groundtruth/ensenso_stacked_boxes_2700mm.json"
+
+#pred_dir = "/home/jyh/json/bdloss_new/mechmind_free_form_2400mm.json"
+#gt_dir = "/home/jyh/json/groundtruth/mechmind_free_form_2400mm.json"
+
+#pred_dir = "/home/jyh/json/bdloss_new/mechmind_stacked_boxes_3300mm.json"
+#gt_dir = "/home/jyh/json/groundtruth/mechmind_stacked_boxes_3300mm.json"
 
 
 # true object associations:
@@ -235,7 +247,7 @@ for i, index_pair in enumerate(obj_ass[:0]):
     #ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[1]), color= pred_colors[i])
 
 
-# compute IoU to get association between prediction & ground truth 
+# compute IoU to get association between before & ground truth 
 pred_idxs = np.arange(len(preds_bboxes)).tolist()
 gt_idxs = np.arange(len(gt_bboxes)).tolist()
 ass_found = []   # store object associations found
@@ -256,7 +268,6 @@ for k, pred_idx in enumerate(pred_idxs):
             if (iou_3d > max_iou):
                 max_iou = iou_3d
                 max_gt_index = gt_idx
-    
     if max_gt_index is None:
         continue  # match not found
     else:
@@ -335,7 +346,7 @@ pred_colors = plt.cm.prism(np.arange(0,len(ass_found))/len(ass_found))
 gt_colors = plt.cm.gist_ncar(np.arange(0,len(ass_found))/len(ass_found))
 z_errors = []
 
-# Find prediction - gt correspondence of corners in the front plane
+# Find before - gt correspondence of corners in the front plane
 # For each pbox in pred_box
 #   For each pcorner in pbox:
 #       for each gtcorner in gt_box
@@ -577,28 +588,71 @@ for k, index_pair in enumerate(ass_found[:]):
     pred_cube.sort(key=(lambda x: (x[0], x[2])))
 
     # get only front plane corners
-    gt_front_corners = gt_cube[:4]
+    gt_front_corners_1 = gt_cube[:4]
+    gt_front_corners_2 = gt_cube[:2] + gt_cube[4:6]
     pred_front_corners_1 = pred_cube[:4]
     pred_front_corners_2 = pred_cube[:2] + pred_cube[4:6]
 
-    # get centroid & normal vector of gt plane
-    gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
-    gt_v1 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[1])
-    gt_v2 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[2])
-    gt_normal_v = np.cross(gt_v1, gt_v2)
+    # get centroid & normal vector of 1st gt plane
+    gt_centroid_1 = np.mean(np.array(gt_front_corners_1), axis=0)
+    gt_v1 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[1])
+    gt_v2 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[2])
+    gt_normal_v1 = np.cross(gt_v1, gt_v2)
 
-    if gt_normal_v[0] > 0:
-        gt_normal_v *= -1
-    u1, v1, w1 = gt_centroid
-    x1, y1, z1 = gt_normal_v
+    if gt_normal_v1[0] > 0:
+        gt_normal_v1 *= -1
+    u1, v1, w1 = gt_centroid_1
+    x1, y1, z1 = gt_normal_v1
+
+    # get centroid & normal vector of 2nd gt plane
+    gt_centroid_2 = np.mean(np.array(gt_front_corners_2), axis=0)
+    gt_v1 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[1])
+    gt_v2 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[2])
+    gt_normal_v2 = np.cross(gt_v1, gt_v2)
+
+    if gt_normal_v2[0] > 0:
+        gt_normal_v2 *= -1
+    u2, v2, w2 = gt_centroid_2
+    x2, y2, z2 = gt_normal_v2
+
+    gt_normal_compare = np.array(gt_normal_v1) - np.array(gt_normal_v2)
+
+    # If wrong front plane detected, two normal vectors are same.
+    # So, change the corner of front plane and re-calculate.
+    if la.norm(gt_normal_compare) < 0.001:
+        gt_front_corners_1 = gt_cube[:3] + [gt_cube[4]]
+        gt_front_corners_2 = gt_cube[:2] + [gt_cube[3]] + [gt_cube[5]]
+
+        # get centroid & normal vector of 1st gt plane
+        ## TODO the front plane corner may be index 0, 1, 2, 5 and 0, 1, 3, 4
+        ## if so, the centroid can be different but orientation calculating is work yet.
+        gt_centroid_1 = np.mean(np.array(gt_front_corners_1), axis=0)
+        gt_v1 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[1])
+        gt_v2 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[2])
+        gt_normal_v1 = np.cross(gt_v1, gt_v2)
+
+        if gt_normal_v1[0] > 0:
+            gt_normal_v1 *= -1
+        u1, v1, w1 = gt_centroid_1
+        x1, y1, z1 = gt_normal_v1
+
+        # get centroid & normal vector of 2nd gt plane
+        gt_centroid_2 = np.mean(np.array(gt_front_corners_2), axis=0)
+        gt_v1 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[1])
+        gt_v2 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[2])
+        gt_normal_v2 = np.cross(gt_v1, gt_v2)
+
+        if gt_normal_v2[0] > 0:
+            gt_normal_v2 *= -1
+        u2, v2, w2 = gt_centroid_2
+        x2, y2, z2 = gt_normal_v2
 
     # get centroid & normal vector of 1st pred plane
     pred_centroid_1 = np.mean(np.array(pred_front_corners_1), axis=0)
     x5, y5, z5 = pred_centroid_1
-    ax4.scatter(x5, y5, z5, color='r', marker='o')
 
     pred_v1 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[1]))
-    pred_v2 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[2]))
+    pred_v2 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[3]))
     pred_normal_v1 = np.cross(pred_v1, pred_v2)
 
     if pred_normal_v1[0] > 0:
@@ -612,7 +666,7 @@ for k, index_pair in enumerate(ass_found[:]):
     # ax4.scatter(x6, y6, z6, color='b', marker='o')
 
     pred_v1 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[1]))
-    pred_v2 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[2]))
+    pred_v2 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[3]))
     pred_normal_v2 = np.cross(pred_v1, pred_v2)
 
     if pred_normal_v2[0] > 0:
@@ -620,18 +674,45 @@ for k, index_pair in enumerate(ass_found[:]):
     x8, y8, z8 = pred_normal_v2
     # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
 
-    # get theta from 2 vectors
-    theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
-    theta_degree_1 = math.degrees(theta_radian_1)
-    theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
-    theta_degree_2 = math.degrees(theta_radian_2)
+    pred_normal_compare = np.array(pred_normal_v1) - np.array(pred_normal_v2)
 
-    if theta_degree_1 > 45:
-        pred_normal_v1, pred_normal_v2 = pred_normal_v2, pred_normal_v1
-        theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
-        theta_degree_1 = math.degrees(theta_radian_1)
-        theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
-        theta_degree_2 = math.degrees(theta_radian_2)
+    if la.norm(pred_normal_compare) < 0.001:
+        pred_front_corners_1 = pred_cube[:3] + [pred_cube[4]]
+        pred_front_corners_2 = pred_cube[:2] + [pred_cube[3]] + [pred_cube[5]]
+
+        # get centroid & normal vector of 1st gt plane
+        pred_centroid_1 = np.mean(np.array(pred_front_corners_1), axis=0)
+        pred_v1 = np.array(pred_front_corners_1[0]) - np.array(pred_front_corners_1[1])
+        pred_v2 = np.array(pred_front_corners_1[0]) - np.array(pred_front_corners_1[2])
+        pred_normal_v1 = np.cross(pred_v1, pred_v2)
+
+        if pred_normal_v1[0] > 0:
+            pred_normal_v1 *= -1
+        x5, y5, z5 = pred_centroid_1
+        x7, y7, z7 = pred_normal_v1
+
+        # get centroid & normal vector of 2nd gt plane
+        pred_centroid_2 = np.mean(np.array(pred_front_corners_2), axis=0)
+        pred_v1 = np.array(pred_front_corners_2[0]) - np.array(pred_front_corners_2[1])
+        pred_v2 = np.array(pred_front_corners_2[0]) - np.array(pred_front_corners_2[2])
+        pred_normal_v2 = np.cross(pred_v1, pred_v2)
+
+        if pred_normal_v2[0] > 0:
+            pred_normal_v2 *= -1
+        x6, y6, z6 = pred_centroid_2
+        x8, y8, z8 = pred_normal_v2
+        
+    ax4.scatter(x5, y5, z5, color='r', marker='o')
+
+    # get theta from 2 vectors
+    theta_radian = math.acos(np.dot(gt_normal_v1, pred_normal_v1) / (np.linalg.norm(gt_normal_v1) * np.linalg.norm(pred_normal_v1)))
+    theta_degree = math.degrees(theta_radian)
+
+    # We need to compare 2 gt_normal_vector & 2 pred_normal_vector. Orientation error cannot exceed 45 degree.
+    if theta_degree > 45:
+        theta_radian = math.acos(np.dot(gt_normal_v1, pred_normal_v2) / (np.linalg.norm(gt_normal_v1) * np.linalg.norm(pred_normal_v2)))
+        theta_degree = math.degrees(theta_radian)
+
         x5, x6 = x6, x5
         y5, y6 = y6, y5
         z5, z6 = z6, z5
@@ -639,11 +720,33 @@ for k, index_pair in enumerate(ass_found[:]):
         y7, y8 = y8, y7
         z7, z8 = z8, z7
 
+        if theta_degree > 45:
+            theta_radian = math.acos(np.dot(gt_normal_v2, pred_normal_v2) / (np.linalg.norm(gt_normal_v2) * np.linalg.norm(pred_normal_v2)))
+            theta_degree = math.degrees(theta_radian)
+            
+            u1, u2 = u2, u1
+            v1, v2 = v2, v1
+            w1, w2 = w2, w1
+            x1, x2 = x2, x1
+            y1, y2 = y2, y1
+            z1, z2 = z2, z1
+
+            if theta_degree > 45:
+                
+                theta_radian = math.acos(np.dot(gt_normal_v2, pred_normal_v1) / (np.linalg.norm(gt_normal_v2) * np.linalg.norm(pred_normal_v1)))
+                theta_degree = math.degrees(theta_radian)
+                x5, x6 = x6, x5
+                y5, y6 = y6, y5
+                z5, z6 = z6, z5
+                x7, x8 = x8, x7
+                y7, y8 = y8, y7
+                z7, z8 = z8, z7
+
     ax4.quiver(u1, v1, w1, x1, y1, z1, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
     ax4.quiver(x5, y5, z5, x7, y7, z7, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
-    # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+    #ax4.quiver(x6, y6, z6, x8, y8, z8, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
 
-    orientation_error = theta_degree_1
+    orientation_error = theta_degree
     orientation_errors.append(orientation_error)
 
 print("Orientation Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(orientation_errors),
@@ -700,12 +803,12 @@ set_axes_equal(ax4)
 
 plt.tight_layout()
 plt.show()
-# plt.savefig('/home/ksy/azure_pouch_box_1670mm.png')
-# plt.savefig('/home/ksy/azure_sack_box_pouch_1500mm.png')
-# plt.savefig('/home/ksy/azure_scramble_1900mm.png')
-# plt.savefig('/home/ksy/azure_stacked_boxes_2400mm.png')
-# plt.savefig('/home/ksy/ensenso_sack_box_pouch_3600mm.png')
-# plt.savefig('/home/ksy/ensenso_scramble_2400mm.png')
-# plt.savefig('/home/ksy/ensenso_stacked_boxes_2700mm.png')
-# plt.savefig('/home/ksy/mechmind_free_form_2400mm.png')
-# plt.savefig('/home/ksy/mechmind_stacked_boxes_3300mm.png')
+# plt.savefig('/home/jyh/azure_pouch_box_1670mm.png')
+# plt.savefig('/home/jyh/azure_sack_box_pouch_1500mm.png')
+# plt.savefig('/home/jyh/azure_scramble_1900mm.png')
+# plt.savefig('/home/jyh/azure_stacked_boxes_2400mm.png')
+# plt.savefig('/home/jyh/ensenso_sack_box_pouch_3600mm.png')
+# plt.savefig('/home/jyh/ensenso_scramble_2400mm.png')
+# plt.savefig('/home/jyh/ensenso_stacked_boxes_2700mm.png')
+# plt.savefig('/home/jyh/mechmind_free_form_2400mm.png')
+# plt.savefig('/home/jyh/mechmind_stacked_boxes_3300mm.png')
