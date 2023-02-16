@@ -1,6 +1,7 @@
 from bbox import BBox3D
 import pyquaternion
 import numpy as np
+import numpy.linalg as la
 import json
 import random
 from mpl_toolkits.mplot3d import Axes3D
@@ -34,33 +35,8 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/ksy/analysis/aem_pred/azure_pouch_box_1670mm.json"
-gt_dir = "/home/ksy/analysis/aem_gt/azure_pouch_box_1670mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_sack_box_pouch_1500mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_sack_box_pouch_1500mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_scramble_1900mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_scramble_1900mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/azure_stacked_boxes_2400mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/azure_stacked_boxes_2400mm.json"
-
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_sack_box_pouch_3600mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_sack_box_pouch_3600mm.json"
-
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_scramble_2400mm.json"                # 90도짜리 있음
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_scramble_2400mm.json"
-#
-# pred_dir = "/home/ksy/analysis/aem_pred/ensenso_stacked_boxes_2700mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/ensenso_stacked_boxes_2700mm.json"
-
-# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_free_form_2400mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_free_form_2400mm.json"
-
-# pred_dir = "/home/ksy/analysis/aem_pred/mechmind_stacked_boxes_3300mm.json"
-# gt_dir = "/home/ksy/analysis/aem_gt/mechmind_horz_3300mm.json"
-
+pred_dir = "/home/jyh/groundtruth/2m/5.json"
+gt_dir = "/home/jyh/groundtruth/2m/2m.json"
 
 # true object associations:
 # (gt id, pred id)
@@ -448,8 +424,8 @@ for k, index_pair in enumerate(ass_found[:]):
 
 error_width =[np.abs(v) for v in  (np.array(pred_width) - np.array(gt_width))]
 error_height = [np.abs(v) for v in ( np.array(pred_heigth) - np.array(gt_heigth))]
-print("Width Error:\n{}\n{}\n{}\n{}\n{}\n".format(np.mean(error_width),np.min(error_width), np.max(error_width),np.std(error_width),len(error_width)))
-print("Hieght Error: \n{}\n{}\n{}\n{}\n{}\n".format(np.mean(error_height),np.min(error_height), np.max(error_height),np.std(error_height),len(error_height)))
+print("Width Error:\n{}\n{}\n".format(np.mean(error_width), np.max(error_width)))
+print("Hieght Error: \n{}\n{}\n".format(np.mean(error_height), np.max(error_height)))
 
 
 # sum all per corner errors into ADD metric
@@ -461,11 +437,7 @@ for data in  gt_boxes_corner_idx:
     add.append(error/4)
 
 #assert len(add)==len(gt_boxes_corner_idx)
-print("ADD:\n{}\n{}\n{}\n{}\n{}".format(np.mean(add),
-                                        np.min(add), 
-                                        np.max(add),
-                                        np.std(add),
-                                        len(add)))
+print("ADD:\n{}\n{}\n".format(np.mean(add), np.max(add)))
 
 
 # compute front plane position errors
@@ -496,70 +468,7 @@ for k, index_pair in enumerate(ass_found[:]):
     # ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
     # ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
 
-print("Position Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(centroid_errors),
-                                                        np.min(centroid_errors),
-                                                        np.max(centroid_errors),
-                                                        np.std(centroid_errors),
-                                                        len(centroid_errors)))
-
-
-# # compute front plane orientation errors
-# avg_vectors = []
-# orientation_errors = []
-# for k, index_pair in enumerate(ass_found[:]):
-#     # get only the 4 points with lowest X position value : front plane points
-#     # retrieve corresponding boxes
-#     gt_box = gt_bboxes[index_pair[0]]
-#     pred_box = preds_bboxes[index_pair[1]]
-#
-#     # get corners of 3d box and order by x value
-#     gt_cube = gt_box.p.tolist()
-#     pred_cube = pred_box.p.tolist()
-#     gt_cube.sort(key=(lambda x: x[0]))
-#     pred_cube.sort(key=(lambda x: x[0]))
-#
-#     # get only front plane corners
-#     gt_front_corners = gt_cube[:4]
-#     pred_front_corners = pred_cube[:4]
-#
-#     gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
-#     pred_centroid = np.mean(np.array(pred_front_corners), axis=0)
-#
-#     # compute cross vector with 2 vectors of plane
-#     gt_v1 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[1])
-#     gt_v2 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[2])
-#     gt_normal_v = np.cross(gt_v1, gt_v2)
-#
-#     pred_v1 = np.array(pred_front_corners[0] - np.array(pred_front_corners[1]))
-#     pred_v2 = np.array(pred_front_corners[0] - np.array(pred_front_corners[2]))
-#     pred_normal_v = np.cross(pred_v1, pred_v2)
-#
-#     # reverse vectors with opposite direction
-#     if gt_normal_v[0] > 0:
-#         gt_normal_v *= -1
-#     u1, v1, w1 = gt_centroid
-#     x1, y1, z1 = gt_normal_v
-#
-#     if pred_normal_v[0] > 0:
-#         pred_normal_v *= -1
-#     u2, v2, w2 = pred_centroid
-#     x2, y2, z2 = pred_normal_v
-#
-#     # get theta from 2 vectors
-#     theta_radian = math.acos(np.dot(gt_normal_v, pred_normal_v) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v)))
-#     theta_degree = math.degrees(theta_radian)
-#
-#     orientation_error = theta_degree
-#     orientation_errors.append(orientation_error)
-#
-#     ax4.quiver(u1, v1, w1, x1, y1, z1, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
-#     ax4.quiver(u2, v2, w2, x2, y2, z2, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
-#
-# print("Orientation Errors: \n{}°\n{}°\n{}°\n{}\n{}".format(np.mean(orientation_errors),
-#                                                            np.min(orientation_errors),
-#                                                            np.max(orientation_errors),
-#                                                            np.std(orientation_errors),
-#                                                            len(orientation_errors)))
+print("Position Errors: \n{}\n{}\n".format(np.mean(centroid_errors), np.max(centroid_errors)))
 
 # compute front plane orientation errors
 avg_vectors = []
@@ -577,28 +486,71 @@ for k, index_pair in enumerate(ass_found[:]):
     pred_cube.sort(key=(lambda x: (x[0], x[2])))
 
     # get only front plane corners
-    gt_front_corners = gt_cube[:4]
+    gt_front_corners_1 = gt_cube[:4]
+    gt_front_corners_2 = gt_cube[:2] + gt_cube[4:6]
     pred_front_corners_1 = pred_cube[:4]
     pred_front_corners_2 = pred_cube[:2] + pred_cube[4:6]
 
-    # get centroid & normal vector of gt plane
-    gt_centroid = np.mean(np.array(gt_front_corners), axis=0)
-    gt_v1 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[1])
-    gt_v2 = np.array(gt_front_corners[0]) - np.array(gt_front_corners[2])
-    gt_normal_v = np.cross(gt_v1, gt_v2)
+    # get centroid & normal vector of 1st gt plane
+    gt_centroid_1 = np.mean(np.array(gt_front_corners_1), axis=0)
+    gt_v1 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[1])
+    gt_v2 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[2])
+    gt_normal_v1 = np.cross(gt_v1, gt_v2)
 
-    if gt_normal_v[0] > 0:
-        gt_normal_v *= -1
-    u1, v1, w1 = gt_centroid
-    x1, y1, z1 = gt_normal_v
+    if gt_normal_v1[0] > 0:
+        gt_normal_v1 *= -1
+    u1, v1, w1 = gt_centroid_1
+    x1, y1, z1 = gt_normal_v1
+
+    # get centroid & normal vector of 2nd gt plane
+    gt_centroid_2 = np.mean(np.array(gt_front_corners_2), axis=0)
+    gt_v1 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[1])
+    gt_v2 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[2])
+    gt_normal_v2 = np.cross(gt_v1, gt_v2)
+
+    if gt_normal_v2[0] > 0:
+        gt_normal_v2 *= -1
+    u2, v2, w2 = gt_centroid_2
+    x2, y2, z2 = gt_normal_v2
+
+    gt_normal_compare = np.array(gt_normal_v1) - np.array(gt_normal_v2)
+
+    # If wrong front plane detected, two normal vectors are same.
+    # So, change the corner of front plane and re-calculate.
+    if la.norm(gt_normal_compare) < 0.001:
+        gt_front_corners_1 = gt_cube[:3] + [gt_cube[4]]
+        gt_front_corners_2 = gt_cube[:2] + [gt_cube[3]] + [gt_cube[5]]
+
+        # get centroid & normal vector of 1st gt plane
+        ## TODO the front plane corner may be index 0, 1, 2, 5 and 0, 1, 3, 4
+        ## if so, the centroid can be different but orientation calculating is work yet.
+        gt_centroid_1 = np.mean(np.array(gt_front_corners_1), axis=0)
+        gt_v1 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[1])
+        gt_v2 = np.array(gt_front_corners_1[0]) - np.array(gt_front_corners_1[2])
+        gt_normal_v1 = np.cross(gt_v1, gt_v2)
+
+        if gt_normal_v1[0] > 0:
+            gt_normal_v1 *= -1
+        u1, v1, w1 = gt_centroid_1
+        x1, y1, z1 = gt_normal_v1
+
+        # get centroid & normal vector of 2nd gt plane
+        gt_centroid_2 = np.mean(np.array(gt_front_corners_2), axis=0)
+        gt_v1 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[1])
+        gt_v2 = np.array(gt_front_corners_2[0]) - np.array(gt_front_corners_2[2])
+        gt_normal_v2 = np.cross(gt_v1, gt_v2)
+
+        if gt_normal_v2[0] > 0:
+            gt_normal_v2 *= -1
+        u2, v2, w2 = gt_centroid_2
+        x2, y2, z2 = gt_normal_v2
 
     # get centroid & normal vector of 1st pred plane
     pred_centroid_1 = np.mean(np.array(pred_front_corners_1), axis=0)
     x5, y5, z5 = pred_centroid_1
-    ax4.scatter(x5, y5, z5, color='r', marker='o')
 
     pred_v1 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[1]))
-    pred_v2 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[2]))
+    pred_v2 = np.array(pred_front_corners_1[0] - np.array(pred_front_corners_1[3]))
     pred_normal_v1 = np.cross(pred_v1, pred_v2)
 
     if pred_normal_v1[0] > 0:
@@ -612,7 +564,7 @@ for k, index_pair in enumerate(ass_found[:]):
     # ax4.scatter(x6, y6, z6, color='b', marker='o')
 
     pred_v1 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[1]))
-    pred_v2 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[2]))
+    pred_v2 = np.array(pred_front_corners_2[0] - np.array(pred_front_corners_2[3]))
     pred_normal_v2 = np.cross(pred_v1, pred_v2)
 
     if pred_normal_v2[0] > 0:
@@ -620,18 +572,48 @@ for k, index_pair in enumerate(ass_found[:]):
     x8, y8, z8 = pred_normal_v2
     # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
 
-    # get theta from 2 vectors
-    theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
-    theta_degree_1 = math.degrees(theta_radian_1)
-    theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
-    theta_degree_2 = math.degrees(theta_radian_2)
+    pred_normal_compare = np.array(pred_normal_v1) - np.array(pred_normal_v2)
 
-    if theta_degree_1 > 45:
-        pred_normal_v1, pred_normal_v2 = pred_normal_v2, pred_normal_v1
-        theta_radian_1 = math.acos(np.dot(gt_normal_v, pred_normal_v1) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v1)))
-        theta_degree_1 = math.degrees(theta_radian_1)
-        theta_radian_2 = math.acos(np.dot(gt_normal_v, pred_normal_v2) / (np.linalg.norm(gt_normal_v) * np.linalg.norm(pred_normal_v2)))
-        theta_degree_2 = math.degrees(theta_radian_2)
+    if la.norm(pred_normal_compare) < 0.001:
+        pred_front_corners_1 = pred_cube[:3] + [pred_cube[4]]
+        pred_front_corners_2 = pred_cube[:2] + [pred_cube[3]] + [pred_cube[5]]
+
+        # get centroid & normal vector of 1st gt plane
+        pred_centroid_1 = np.mean(np.array(pred_front_corners_1), axis=0)
+        pred_v1 = np.array(pred_front_corners_1[0]) - np.array(pred_front_corners_1[1])
+        pred_v2 = np.array(pred_front_corners_1[0]) - np.array(pred_front_corners_1[2])
+        pred_normal_v1 = np.cross(pred_v1, pred_v2)
+
+        if pred_normal_v1[0] > 0:
+            pred_normal_v1 *= -1
+        x5, y5, z5 = pred_centroid_1
+        x7, y7, z7 = pred_normal_v1
+
+        # get centroid & normal vector of 2nd gt plane
+        pred_centroid_2 = np.mean(np.array(pred_front_corners_2), axis=0)
+        pred_v1 = np.array(pred_front_corners_2[0]) - np.array(pred_front_corners_2[1])
+        pred_v2 = np.array(pred_front_corners_2[0]) - np.array(pred_front_corners_2[2])
+        pred_normal_v2 = np.cross(pred_v1, pred_v2)
+
+        if pred_normal_v2[0] > 0:
+            pred_normal_v2 *= -1
+        x6, y6, z6 = pred_centroid_2
+        x8, y8, z8 = pred_normal_v2
+        
+    ax4.scatter(x5, y5, z5, color='r', marker='o')
+
+    # get theta from 2 vectors
+    theta_radian = math.acos(np.dot(gt_normal_v1, pred_normal_v1) / (np.linalg.norm(gt_normal_v1) * np.linalg.norm(pred_normal_v1)))
+    theta_degree = math.degrees(theta_radian)
+    theta_list = [theta_degree, 0, 0, 0]
+    
+
+    # We need to compare 2 gt_normal_vector & 2 pred_normal_vector. Orientation error cannot exceed 45 degree.
+    if theta_degree > 45:
+        theta_radian = math.acos(np.dot(gt_normal_v1, pred_normal_v2) / (np.linalg.norm(gt_normal_v1) * np.linalg.norm(pred_normal_v2)))
+        theta_degree = math.degrees(theta_radian)
+        theta_list[1] = theta_degree
+
         x5, x6 = x6, x5
         y5, y6 = y6, y5
         z5, z6 = z6, z5
@@ -639,18 +621,50 @@ for k, index_pair in enumerate(ass_found[:]):
         y7, y8 = y8, y7
         z7, z8 = z8, z7
 
+        if theta_degree > 45:
+            theta_radian = math.acos(np.dot(gt_normal_v2, pred_normal_v2) / (np.linalg.norm(gt_normal_v2) * np.linalg.norm(pred_normal_v2)))
+            theta_degree = math.degrees(theta_radian)
+            theta_list[2] = theta_degree
+            
+            u1, u2 = u2, u1
+            v1, v2 = v2, v1
+            w1, w2 = w2, w1
+            x1, x2 = x2, x1
+            y1, y2 = y2, y1
+            z1, z2 = z2, z1
+
+            if theta_degree > 45:
+                
+                theta_radian = math.acos(np.dot(gt_normal_v2, pred_normal_v1) / (np.linalg.norm(gt_normal_v2) * np.linalg.norm(pred_normal_v1)))
+                theta_degree = math.degrees(theta_radian)
+                theta_list[3] = theta_degree
+
+                x5, x6 = x6, x5
+                y5, y6 = y6, y5
+                z5, z6 = z6, z5
+                x7, x8 = x8, x7
+                y7, y8 = y8, y7
+                z7, z8 = z8, z7
+
+                #if theta_degree > 45:
+                    #all orientation difference between two planes considered front > 45
+                    # Then define orientation difference as the smallest one.
+
+                #    theta_degree = min(theta_list)
+                    #theta_index = theta_degree.index(theta_degree)
+
+
+
+
+
     ax4.quiver(u1, v1, w1, x1, y1, z1, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
     ax4.quiver(x5, y5, z5, x7, y7, z7, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
-    # ax4.quiver(x6, y6, z6, x8, y8, z8, color="b", arrow_length_ratio=0.2, length=0.3, normalize=True)
+    #ax4.quiver(x6, y6, z6, x8, y8, z8, color="r", arrow_length_ratio=0.2, length=0.3, normalize=True)
 
-    orientation_error = theta_degree_1
+    orientation_error = theta_degree
     orientation_errors.append(orientation_error)
 
-print("Orientation Errors: \n{}\n{}\n{}\n{}\n{}".format(np.mean(orientation_errors),
-                                                           np.min(orientation_errors),
-                                                           np.max(orientation_errors),
-                                                           np.std(orientation_errors),
-                                                           len(orientation_errors)))
+print("Orientation Errors: \n{}\n{}\n".format(np.mean(orientation_errors), np.max(orientation_errors)))
 
 # fig3 = plt.figure()
 # ax5 = fig3.add_subplot(1,1,1)
