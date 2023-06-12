@@ -12,6 +12,20 @@ import torch
 import math
 # Assume inputs: boxes1 (M, 8, 3) and boxes2 (N, 8, 3)
 
+_box_triangles = [
+    [0, 1, 2],
+    [0, 3, 2],
+    [4, 5, 6],
+    [4, 6, 7],
+    [1, 5, 6],
+    [1, 6, 2],
+    [0, 4, 7],
+    [0, 7, 3],
+    [3, 2, 6],
+    [3, 6, 7],
+    [0, 1, 5],
+    [0, 4, 5],
+]
 
 def set_axes_equal(ax: plt.Axes):
     """Set 3D plot axes to equal scale.
@@ -35,19 +49,20 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-pred_dir = "/home/jyh/groundtruth/2m/5.json"
-gt_dir = "/home/jyh/groundtruth/2m/2m.json"
+# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_1900/5.json"
+# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_scramble_1900mm.json"
+
+# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_2400/1.json"
+# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_stacked_boxes_2400mm.json"
+
+# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_1670/4.json"
+# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_pouch_box_1670mm.json"
+
+pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/2m/5.json"
+gt_dir = "/home/jyh/Documents/obb_error/evaluation/2m.json"
 
 # true object associations:
 # (gt id, pred id)
-obj_ass =[(0,38),(1,46),(2,37),(3,33),(19,15),(4,11),(5,8),(6,17),(7,20),
-            (8,10),(20,1),(9,19),(11,14),(12,16),(13,18),(14,3),(50,26),
-            (21,5),(15,9),(16,2),(17,13),(18,7),(43,56),(45,34), (48,31), (49,39),
-            (22,0),(32,32),(33,29),(34,40),(37,36),(35,51),(36,49),(29,22),
-            (27,4),(30,27),(28,12),(55,41),(40,24),(41,28),(44,42),(42,35),
-            (25,23),(31,30),(26,21),(46,44),(47,43),(24,6),(23,25)]
-
-obj_ass.sort(key=(lambda x: x[0]))
 
 pred_file = open(pred_dir, 'r')
 preds_json = json.load(pred_file)
@@ -164,51 +179,8 @@ ax4 = fig2.add_subplot(1,1,1,projection="3d")
 
 # draw ground true associations... do this only if these are known
 # usually these are unknown
-gt_colors = plt.cm.viridis(np.arange(0,len(obj_ass))/len(obj_ass))
-pred_colors = plt.cm.copper(np.arange(0,len(obj_ass))/len(obj_ass))
-for i, index_pair in enumerate(obj_ass[:0]):
-    # retrieve corresponding boxes
-    gt_box = gt_bboxes[index_pair[0]]
-    pred_box = preds_bboxes[index_pair[1]]
-
-    gt_cube = gt_box.p
-    pred_cube = pred_box.p
-    # plot vertices
-    # ax3.scatter3D(gt_cube[:, 0], gt_cube[:, 1], gt_cube[:, 2], s=0.3, color=gt_colors[i])
-    # ax3.scatter3D(pred_cube[:, 0], pred_cube[:, 1], pred_cube[:, 2], s=0.3, color=pred_colors[i])
-
-    # write corners' names
-    texts = ["p"+str(i+1) for i in range(8)]
-    corners = [box.p1, box.p2, box.p3, box.p4, box.p5, box.p6, box.p7, box.p8]
-    corners.sort(key=(lambda x: x[0]))
-    for k,(text, corner) in enumerate(zip(texts,corners)):
-        continue
-        if k < 4:
-            ax2.text(corner[0],corner[1], corner[2], text, color = "k")
-
-    # list of sides' polygons of ground true cube
-    gt_verts = [[gt_cube[0],gt_cube[1],gt_cube[2],gt_cube[3]],
-            [gt_cube[4],gt_cube[5],gt_cube[6],gt_cube[7]], 
-            [gt_cube[0],gt_cube[1],gt_cube[5],gt_cube[4]], 
-            [gt_cube[2],gt_cube[3],gt_cube[7],gt_cube[6]], 
-            [gt_cube[1],gt_cube[2],gt_cube[6],gt_cube[5]],
-            [gt_cube[4],gt_cube[7],gt_cube[3],gt_cube[0]]]
-
-    # plot sides
-    # ax3.add_collection3d(Poly3DCollection(gt_verts,  facecolors=gt_colors[i], linewidths=1, edgecolors=gt_colors[i], alpha=.25))
-    # ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[0]), color= gt_colors[i])
-
-    # list of sides' polygons of predicted cube
-    pred_verts = [[pred_cube[0],pred_cube[1],pred_cube[2],pred_cube[3]],
-            [pred_cube[4],pred_cube[5],pred_cube[6],pred_cube[7]], 
-            [pred_cube[0],pred_cube[1],pred_cube[5],pred_cube[4]], 
-            [pred_cube[2],pred_cube[3],pred_cube[7],pred_cube[6]], 
-            [pred_cube[1],pred_cube[2],pred_cube[6],pred_cube[5]],
-            [pred_cube[4],pred_cube[7],pred_cube[3],pred_cube[0]]]
-
-    # plot sides
-    # ax3.add_collection3d(Poly3DCollection(pred_verts,  facecolors=pred_colors[i], linewidths=1, edgecolors=pred_colors[i], alpha=.25))
-    #ax3.text(box.center[0], box.center[1], box.center[2], str(index_pair[1]), color= pred_colors[i])
+gt_colors = plt.cm.viridis(np.arange(0,len(gt_bboxes))/len(gt_bboxes))
+pred_colors = plt.cm.copper(np.arange(0,len(preds_bboxes))/len(preds_bboxes))
 
 
 # compute IoU to get association between prediction & ground truth 
@@ -217,6 +189,7 @@ gt_idxs = np.arange(len(gt_bboxes)).tolist()
 ass_found = []   # store object associations found
 ious = []
 int_vol = []
+
 for k, pred_idx in enumerate(pred_idxs):
     pred_box = torch.tensor(preds_bboxes[k].p, dtype=torch.float32)
     max_iou = -1
@@ -225,6 +198,21 @@ for k, pred_idx in enumerate(pred_idxs):
         if gt_idx == -1: # ignore if this gt_idx was already used
             continue
         gt_box = torch.tensor(gt_bboxes[j].p, dtype=torch.float32)
+        #if pred_idx == 31:
+        
+        faces = torch.tensor(_box_triangles, dtype=torch.int64, device=pred_box.unsqueeze(0).device)
+        verts = pred_box.unsqueeze(0).index_select(index=faces.view(-1), dim=1)
+        B = pred_box.unsqueeze(0).shape[0]
+        T, V = faces.shape
+        # (B, T, 3, 3) -> (B, T, 3)
+        v0, v1, v2 = verts.reshape(B, T, V, 3).unbind(2)
+
+        normals = torch.cross(v1 - v0, v2 - v0, dim=-1)  # (B, T, 3)
+        face_areas = normals.norm(dim=-1) / 2
+
+        if (face_areas < 1e-4).any().item():
+            continue
+    
         intersection_vol, iou_3d = box3d_overlap(pred_box.unsqueeze(0), gt_box.unsqueeze(0))
         ious.append(iou_3d.item())
         int_vol.append(intersection_vol)
