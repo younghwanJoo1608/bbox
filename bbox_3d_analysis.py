@@ -49,16 +49,16 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_1900/5.json"
+#pred_dir = "/home/jyh/Documents/obb_error/230613/azure_pouch_box_1670mm/1.json"
+#gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_pouch_box_1670mm.json"
+
+# pred_dir = "/home/jyh/Documents/obb_error/230613/azure_scramble_1900mm/1.json"
 # gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_scramble_1900mm.json"
 
-# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_2400/1.json"
-# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_stacked_boxes_2400mm.json"
+#pred_dir = "/home/jyh/Documents/obb_error/230613/azure_stacked_boxes_2400mm/5.json"
+#gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_stacked_boxes_2400mm.json"
 
-# pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/azure_1670/4.json"
-# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_pouch_box_1670mm.json"
-
-pred_dir = "/home/jyh/Documents/obb_error/sipmask_convnext_albu_aug_1024/2m/5.json"
+pred_dir = "/home/jyh/Documents/obb_error/230613/2m/11.json"
 gt_dir = "/home/jyh/Documents/obb_error/evaluation/2m.json"
 
 # true object associations:
