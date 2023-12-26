@@ -49,17 +49,8 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
 
-#pred_dir = "/home/jyh/Documents/obb_error/230613/azure_pouch_box_1670mm/1.json"
-#gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_pouch_box_1670mm.json"
-
-# pred_dir = "/home/jyh/Documents/obb_error/230613/azure_scramble_1900mm/1.json"
-# gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_scramble_1900mm.json"
-
-#pred_dir = "/home/jyh/Documents/obb_error/230613/azure_stacked_boxes_2400mm/5.json"
-#gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_stacked_boxes_2400mm.json"
-
-pred_dir = "/home/jyh/Documents/obb_error/230613/2m/11.json"
-gt_dir = "/home/jyh/Documents/obb_error/evaluation/2m.json"
+pred_dir = "/home/jyh/Documents/obb_error/231027/2400/5.json"
+gt_dir = "/home/jyh/Documents/obb_error/evaluation/azure_stacked_boxes_2400mm.json"
 
 # true object associations:
 # (gt id, pred id)
@@ -412,8 +403,11 @@ for k, index_pair in enumerate(ass_found[:]):
 
 error_width =[np.abs(v) for v in  (np.array(pred_width) - np.array(gt_width))]
 error_height = [np.abs(v) for v in ( np.array(pred_heigth) - np.array(gt_heigth))]
-print("Width Error:\n{}\n{}\n".format(np.mean(error_width), np.max(error_width)))
-print("Hieght Error: \n{}\n{}\n".format(np.mean(error_height), np.max(error_height)))
+error_width_ = [error_width[i] for i in range(0, len(error_width)) if (error_width[i] < 0.10 and error_height[i] < 0.10)]
+error_height_ = [error_height[i] for i in range(0, len(error_height)) if (error_width[i] < 0.10 and error_height[i] < 0.10)]
+
+print("Width Error:\n{}\n{}\n".format(np.mean(error_width_), np.max(error_width_)))
+print("Hieght Error: \n{}\n{}\n".format(np.mean(error_height_), np.max(error_height_)))
 
 
 # sum all per corner errors into ADD metric
@@ -425,7 +419,7 @@ for data in  gt_boxes_corner_idx:
     add.append(error/4)
 
 #assert len(add)==len(gt_boxes_corner_idx)
-print("ADD:\n{}\n{}\n".format(np.mean(add), np.max(add)))
+# print("ADD:\n{}\n{}\n".format(np.mean(add), np.max(add)))
 
 
 # compute front plane position errors
@@ -456,7 +450,8 @@ for k, index_pair in enumerate(ass_found[:]):
     # ax4.plot(pred_centroid[0],pred_centroid[1],pred_centroid[2],marker='o',color="r")
     # ax4.plot(gt_centroid[0],gt_centroid[1],gt_centroid[2],marker='o',color="b")
 
-print("Position Errors: \n{}\n{}\n".format(np.mean(centroid_errors), np.max(centroid_errors)))
+centroid_errors_ = [centroid_errors[i] for i in range(0, len(centroid_errors)) if (error_width[i] < 0.10 and error_height[i] < 0.10)]
+print("Position Errors: \n{}\n{}\n".format(np.mean(centroid_errors_), np.max(centroid_errors_)))
 
 # compute front plane orientation errors
 avg_vectors = []
@@ -652,7 +647,8 @@ for k, index_pair in enumerate(ass_found[:]):
     orientation_error = theta_degree
     orientation_errors.append(orientation_error)
 
-print("Orientation Errors: \n{}\n{}\n".format(np.mean(orientation_errors), np.max(orientation_errors)))
+orientation_errors_ = [orientation_errors[i] for i in range(0, len(orientation_errors)) if (error_width[i] < 0.10 and error_height[i] < 0.10)]
+# print("Orientation Errors: \n{}\n{}\n".format(np.mean(orientation_errors_), np.max(orientation_errors_)))
 
 # fig3 = plt.figure()
 # ax5 = fig3.add_subplot(1,1,1)
